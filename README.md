@@ -1,83 +1,142 @@
 # BiblioCampusUECE — Back-end (API)
 
-API REST em **Python + FastAPI** para o Projeto Final da disciplina de Banco de Dados. Conecta-se ao PostgreSQL do **TP3** (`biblioteca_universitaria`).
+API REST em **Python + FastAPI** para o Projeto Final da disciplina de Banco de Dados (UECE).
+
+Repositório do front-end: [github.com/victor300br/BDfront](https://github.com/victor300br/BDfront)
+
+---
 
 ## Pré-requisitos
 
-- Python 3.11+
-- PostgreSQL com o banco do TP3 criado (scripts `01_create.sql` … `03_objects.sql`)
-- Front-end em execução em `http://127.0.0.1:8080` (repositório **BDfront**)
+1. **Python 3.11+**
+2. **PostgreSQL** (15 ou superior recomendado)
+3. Banco `biblioteca_universitaria` criado com os scripts em [`sql/`](sql/)
 
-## Como rodar
+---
+
+## Passo a passo completo
+
+### 1. Criar o banco de dados
+
+Siga as instruções em [`sql/README.md`](sql/README.md):
+
+1. Crie o banco `biblioteca_universitaria` no pgAdmin.
+2. Execute, nesta ordem: `01_create.sql` → `02_insert.sql` → `03_objects.sql`.
+
+### 2. Configurar a API
+
+Na pasta `BDback`:
 
 ```bat
-run.bat
-```
-
-Ou manualmente:
-
-```bat
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
 copy .env.example .env
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-- API: http://127.0.0.1:8000/api  
-- Documentação interativa: http://127.0.0.1:8000/docs  
-- Health check: http://127.0.0.1:8000/api/health  
-
-Configure a conexão em `.env`:
+Edite `.env` com sua senha do PostgreSQL:
 
 ```
 DATABASE_URL=postgresql://postgres:SUA_SENHA@localhost:5432/biblioteca_universitaria
 ```
 
+### 3. Instalar dependências e iniciar a API
+
+**Opção rápida (Windows):**
+
+```bat
+run.bat
+```
+
+Na primeira execução o script cria o ambiente virtual, instala pacotes e sobe o servidor.
+
+**Manualmente:**
+
+```bat
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+### 4. Iniciar o front-end
+
+Em outro terminal, clone e rode o [BDfront](https://github.com/victor300br/BDfront):
+
+```bat
+run.bat
+```
+
+Abra http://127.0.0.1:8080
+
+---
+
+## URLs úteis
+
+| Serviço | URL |
+|---------|-----|
+| API | http://127.0.0.1:8000/api |
+| Documentação Swagger | http://127.0.0.1:8000/docs |
+| Health check | http://127.0.0.1:8000/api/health |
+| Front-end | http://127.0.0.1:8080 |
+
+---
+
 ## Stack
 
-| Item | Tecnologia |
-|------|------------|
+| Camada | Tecnologia |
+|--------|------------|
 | Framework | FastAPI |
-| Servidor | Uvicorn |
+| Servidor ASGI | Uvicorn |
 | Driver PostgreSQL | psycopg v3 |
 | Validação | Pydantic |
+| IDE | Cursor / VS Code |
 
-## Endpoints e requisitos do PF
+---
 
-| Requisito | Rota / módulo |
+## Estrutura do repositório
+
+```
+BDback/
+├── app/
+│   ├── main.py           # FastAPI, CORS
+│   ├── database.py       # Conexão PostgreSQL
+│   ├── schemas.py        # Validação Pydantic
+│   ├── errors.py         # Erros de integridade
+│   └── routers/          # Rotas REST
+├── sql/                  # Scripts PostgreSQL (TP3)
+│   ├── 01_create.sql
+│   ├── 02_insert.sql
+│   ├── 03_objects.sql
+│   └── README.md
+├── requirements.txt
+├── run.bat
+├── .env.example
+└── README.md
+```
+
+---
+
+## Requisitos do Projeto Final (PF)
+
+| Exigência | Implementação |
 |-----------|----------------|
-| Inserir registro | `POST /api/livros`, `/api/usuarios`, `/api/categorias`, `/api/emprestimos` |
-| Atualizar registro | `PUT /api/livros/{id}`, `/api/usuarios/{id}`, `/api/categorias/{id}` |
-| Remover registro | `DELETE /api/livros/{id}`, `/api/usuarios/{id}`, `/api/categorias/{id}` |
-| Listar registros | `GET` em cada recurso |
-| Consulta específica | `GET /api/livros/{id}`, `/api/usuarios/{id}`, etc. |
-| Busca por substring | `GET /api/livros?busca=termo` (`ILIKE` no título) |
-| Operação composta | `POST /api/emprestimos` (usuário + livro + datas) |
-| JOIN | `GET /api/relatorios/emprestimos-detalhados` (VIEW do TP3) |
+| Inserir / atualizar / remover / listar / consultar | `livros`, `usuarios`, `categorias` |
+| Busca por substring | `GET /api/livros?busca=termo` |
+| Operação composta | `POST /api/emprestimos` |
+| JOIN | `GET /api/relatorios/emprestimos-detalhados` (VIEW) |
 | GROUP BY | `GET /api/relatorios/por-status` |
 | HAVING | `GET /api/relatorios/categorias-populares` |
-| Gatilho PostgreSQL | `PATCH /api/emprestimos/devolver` → atualiza `data_devolucao`; gatilho define `status` |
-| Erro de integridade | CPF duplicado, empréstimo ativo duplicado, FK ao excluir categoria/livro → HTTP 409 |
+| Gatilho PostgreSQL | `PATCH /api/emprestimos/devolver` |
+| Erro de integridade | HTTP 409 (CPF duplicado, FK, empréstimo ativo) |
 
-## Estrutura
-
-```
-app/
-├── main.py          # FastAPI, CORS, rotas
-├── database.py      # Conexão psycopg
-├── schemas.py       # Modelos Pydantic
-├── errors.py        # Tratamento de erros do PostgreSQL
-└── routers/         # livros, usuarios, categorias, emprestimos, relatorios, health
-```
+---
 
 ## Ajustes em relação ao TP3
 
 - Nenhuma alteração no DDL do banco.
-- API adaptada à **PK composta** de `emprestimo` (`id_usuario`, `id_livro`, `data_emprestimo`).
-- Generalização de usuário: insert/update em `estudante`, `professor` ou `funcionario`.
-- Relatórios consomem a VIEW `vw_emprestimos_detalhados` e consultas SQL do TP3.
+- API adaptada à PK composta de `emprestimo`.
+- Cadastro de leitor com generalização (estudante, professor, funcionário).
+
+---
 
 ## Integrante
 
-Victor Araújo Silva — UECE
+**Victor Araújo Silva** — UECE
